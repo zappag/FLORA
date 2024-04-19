@@ -10,8 +10,11 @@ dependencies:
   - python>=3.9
   - cdo
   - netcdf4
+  - xarray
+  - ipykernel
+  - zarr
+  - dask
   - pip
   - pip:
     - cdsapi
     - cdo
-    - xarray
