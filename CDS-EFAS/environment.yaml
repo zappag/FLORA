@@ -1,0 +1,17 @@
+# Create the ECmean4 environment:
+# mamba env create -f environment.yml 
+# or 
+# conda env create -f environment.yml
+
+name : efas
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.9
+  - cdo
+  - netcdf4
+  - pip
+  - pip:
+    - cdsapi
+    - cdo
+    - xarray
