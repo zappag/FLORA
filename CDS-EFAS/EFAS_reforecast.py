@@ -12,12 +12,14 @@ from pandas.tseries.offsets import Day
 cdo = Cdo()
 
 TGTDIR = "/work_big/users/davini/EFAS"
+TMPDIR = "/work_big/users/davini/EFAS/tmp"
 KIND = 'control' # 'control' or 'ensemble'
-VERSION = 4
+VERSION = 4 # version of the EFAS reforecast, only 4 tested so far
+CLEAN = True # remove the temporary files
 
 # create the target directory if it does not exist
-if not os.path.exists(TGTDIR):
-    os.makedirs(TGTDIR)
+os.makedirs(TGTDIR, exist_ok=True)
+os.makedirs(TMPDIR, exist_ok=True)
 
 # create biweekly loop with pandas
 START_DATE = "1999-01-03"
@@ -25,15 +27,16 @@ END_DATE = "1999-01-31"
 date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='7D')
 total_date_range = date_range.union(date_range + Day(4))
 
-
+# loop over the dates
 for date in total_date_range:
 
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day = date.strftime('%d')
+    print(f"Downloading EFAS reforecast {KIND} for {year}-{month}-{day}")
 
-    outfile = os.path.join(TGTDIR,
-                           f'EFAS_reforecast_{year}{month}{day}_{KIND}.zip')
+    target_file = f"{TGTDIR}/EFAS_reforecast_{year}{month}{day}_{KIND}.nc"
+    zip_file = f"{TMPDIR}/EFAS_reforecast_{year}{month}{day}_{KIND}.zip"
 
     request =  {
         'format': 'netcdf4.zip',
@@ -52,25 +55,39 @@ for date in total_date_range:
     elif KIND == 'ensemble':
         request['product_type'] = 'ensemble_perturbed_forecasts'
 
-    print(request)
+    #print(request)
 
     # make the request
-    if not os.path.exists(outfile):
+    if not os.path.exists(target_file):
+        print("Launcing the CDSAPI request...")
         c = cdsapi.Client()
         c.retrieve(
             'efas-reforecast',
             request,
-            outfile)
+            zip_file)
+        
+        # Unzip the file
+        print(f"Unzipping the file {zip_file}...")
+        outdir = zip_file.replace('.zip', '')
+        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+            zip_ref.extractall(outdir)
 
-    # Unzip the file
-    outdir = outfile.replace('.zip', '')
-    with zipfile.ZipFile(outfile, 'r') as zip_ref:
-        zip_ref.extractall(outdir)
-    #os.remove(outfile)
+        # compress and set the time axis
+        print(f"Compressing and setting the time axis of the file {target_file}...")
+        cdo.settaxis(f'{year}-{month}-{day},00:00:00,6hour',
+                    input = f"-selname,dis06 {outdir}/mars_data_0.nc",
+                    output = target_file)
+        
+        if CLEAN:
+            print("Cleaning up the temporary files...")
+            os.remove(zip_file)
+            os.remove(f"{outdir}/mars_data_0.nc")
+            os.rmdir(outdir)
+    
+    else:
+        print(f"File {target_file} already exists, skipping download")
 
-    cdo.settaxis(f'{year}-{month}-{day},00:00:00,6hour',
-                 input = f"-selname,dis06 {outdir}/mars_data_0.nc",
-                 output = f"{outdir}/EFAS_reforecast_{year}{month}{day}_{KIND}.nc")
+
 
 
 
