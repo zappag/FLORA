@@ -14,7 +14,7 @@ cdo = Cdo()
 
 TGTDIR = "/work_big/users/davini/EFAS"
 TMPDIR = "/work_big/users/davini/EFAS/tmp"
-KIND = 'ensemble' # 'control' or 'ensemble'
+KIND = 'control' # 'control' or 'ensemble'
 VERSION = 4 # version of the EFAS reforecast, only 4 tested so far
 CLEAN = True # remove the temporary files
 
@@ -34,12 +34,12 @@ for date in total_date_range:
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day = date.strftime('%d')
-    print(f"Downloading EFAS reforecast {KIND} for {year}-{month}-{day}")
+    print(f"Downloading EFAS{VERSION} reforecast {KIND} for {year}-{month}-{day}")
 
     if KIND == 'control':
-        target_file = f"{TGTDIR}/EFAS_reforecast_{year}{month}{day}_{KIND}.nc"
+        target_file = f"{TGTDIR}/EFAS{VERSION}_reforecast_{year}{month}{day}_{KIND}.nc"
     elif KIND == 'ensemble':
-        target_file = f"{TGTDIR}/EFAS_reforecast_{year}{month}{day}_{KIND}_10.nc"  
+        target_file = f"{TGTDIR}/EFAS{VERSION}_reforecast_{year}{month}{day}_{KIND}_10.nc"  
     zip_file = f"{TMPDIR}/EFAS_reforecast_{year}{month}{day}_{KIND}.zip"
 
     request =  {
@@ -98,7 +98,7 @@ for date in total_date_range:
                 ensname = f"{outdir}/mars_data_ens{ensemble}.nc"
                 dataset_ens = dataset.sel(number=ensemble).to_netcdf(ensname)
                 str_ensemble = str(ensemble).zfill(2)
-                target_file = f"{TGTDIR}/EFAS_reforecast_{year}{month}{day}_{KIND}_{str_ensemble}.nc"
+                target_file = f"{TGTDIR}/EFAS{VERSION}_reforecast_{year}{month}{day}_{KIND}_{str_ensemble}.nc"
 
                 cdo.settaxis(f'{year}-{month}-{day},00:00:00,6hour',
                             input = ensname,
