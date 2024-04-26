@@ -55,15 +55,17 @@ def get_regions(name):
         return (61.02,62.14), (8.21, 10.8)
     if name == 'aragon':
         return (42.30458,43.044), (-1.97765,-1.4743)
-    
-    # return default EFAS box
-    return (24,72), (-35,75)
+    if name == 'global':
+        return (24,72), (-35,75)
+
+    raise ValueError(f"Region {name} not found")
 
 def fixed_region(name, delta):
     """Get lat-lon bounds of a region with delta around the mean lat-lon"""
     lat, lon = get_regions(name)
-    mlat, mlon = np.mean(lat), np.mean(lon)
-    lat, lon = (mlat-delta, mlat+delta), (mlon-delta, mlon+delta)
+    if region is not 'global':
+        mlat, mlon = np.mean(lat), np.mean(lon)
+        lat, lon = (mlat-delta, mlat+delta), (mlon-delta, mlon+delta)
     return lat, lon
 
 def mask_efas(field, regions):
