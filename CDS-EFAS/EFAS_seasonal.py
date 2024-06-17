@@ -12,11 +12,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from cdo import *
+from functions import chunks, fixed_region, mask_efas
 cdo = Cdo()
 
 logging.warning("Launching the EFAS seasonal downloader...")
 
-TGTDIR = "/work_big/users/davini/EFAS/seasonal"
+TGTDIR = "/work_big/users/davini/EFAS/seasonal-v2"
 TMPDIR = "/work_big/users/davini/EFAS/tmp_regions"
 KIND = 'seasonal' # 'control' or 'ensemble'
 VERSION = 5 # version of the EFAS reforecast, only 4 tested so far
@@ -30,54 +31,13 @@ os.makedirs(TMPDIR, exist_ok=True)
 # create biweekly loop with pandas
 START_DATE = "1999-01-01"
 END_DATE = "1999-02-01"
-BOXSIZE = 2 #boundaries among the center of the region
+BOXSIZE = .0 #how  many degrees do you want to extend the boundaries
 NENS = 25 # number of ensemble members
 DELTA = 24 # delta between the leadtimes in hours
 CHUNKS_DOWNLOAD = 215 # number of leadtimes to download at once
 MAXLEADTIME = 215*DELTA # maximum leadtime in hours of 215 days
 date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='MS')
 REGIONS = ['Panaro', 'Timis', 'Lagen', 'Aragon']
-
-# help functions
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
-
-def get_regions(name):
-    """Get lat-lon bounds of a region"""
-    name = name.lower()
-    if name == 'panaro':
-        return (42.2,44.8), (10.5,11.5)
-    if name == 'timis':
-        return  (45.47,45.85), (20.87,21.82)
-    if name == 'lagen':
-        return (61.02,62.14), (8.21, 10.8)
-    if name == 'aragon':
-        return (42.30458,43.044), (-1.97765,-1.4743)
-    if name == 'global':
-        return (24,72), (-35,75)
-
-    raise ValueError(f"Region {name} not found")
-
-def fixed_region(name, delta):
-    """Get lat-lon bounds of a region with delta around the mean lat-lon"""
-    lat, lon = get_regions(name)
-    if region is not 'global':
-        mlat, mlon = np.mean(lat), np.mean(lon)
-        lat, lon = (mlat-delta, mlat+delta), (mlon-delta, mlon+delta)
-    return lat, lon
-
-def mask_efas(field, regions):
-    """Create a mask for the EFAS reforecast"""
-    for region in regions:
-        lat, lon = get_regions(region)
-        if region == regions[0]:
-            mask = ((field.longitude >= lon[0]) & (field.longitude <= lon[1]) & (field.latitude >= lat[0]) & (field.latitude <= lat[1]))
-        else:
-            mask = mask | ((field.longitude >= lon[0]) & (field.longitude <= lon[1]) & (field.latitude >= lat[0]) & (field.latitude <= lat[1]))
-
-    return field.where(mask)
 
 
 # loop over the dates
@@ -165,7 +125,7 @@ for date in date_range:
 
             if CLEAN:
                 os.remove(f"{outdir}/mars_data_0.nc")
-                os.rmdir(outdir)
+                #os.rmdir(outdir)
                 os.remove(zip_file)
             
         # merge the files

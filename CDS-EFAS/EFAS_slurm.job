@@ -1,0 +1,18 @@
+#!/bin/bash
+#SBATCH -n 1
+#SBATCH --mem=4000M
+#SBATCH --time=48:00:00
+#SBATCH --job-name=EFAS_test
+#SBATCH --partition=batch
+#SBATCH --output=/home/davini/EFAS-%j.out
+#SBATCH --error=/home/davini/EFAS-%j.err
+
+# find mamba/conda (to be refined)
+whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
+source $whereconda/etc/profile.d/conda.sh
+
+# activate conda environment
+conda activate efas
+
+echo "conda actived, running python!"
+./EFAS_seasonal.py
