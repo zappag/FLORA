@@ -8,14 +8,16 @@ def get_regions(name):
     """Get lat-lon bounds of a region"""
     name = name.lower()
     if name == 'panaro':
-        return (43.5,45.5), (10,12)
-    if name == 'timis':
-        return  (44.5,46.5), (20,23)
-    if name == 'lagen':
-        return (59.5,61.5), (7, 10.5)
-    if name == 'aragon':
-        return (41.5,43.5), (-3,1)
-    if name == 'global':
+        return (44, 45.2), (10.25, 11.75)
+    elif name == 'timis':
+        return (44.6, 46.25), (20, 23)
+    elif name == 'lagen':
+        return (60, 62.5), (7, 12)
+    elif name == 'aragon':
+        return (42, 43.2), (-2.5, -0.25)
+    elif name == 'reno':
+        return (43.9, 44.9), (10.75, 12.3)
+    elif name == 'global':
         return (24,72), (-35,75)
 
     raise ValueError(f"Region {name} not found")

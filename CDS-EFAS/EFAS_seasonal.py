@@ -8,7 +8,6 @@ import zipfile
 import glob
 import logging
 import cdsapi
-import numpy as np
 import pandas as pd
 import xarray as xr
 from cdo import *
@@ -17,7 +16,7 @@ cdo = Cdo()
 
 logging.warning("Launching the EFAS seasonal downloader...")
 
-TGTDIR = "/work_big/users/davini/EFAS/seasonal-v2"
+TGTDIR = "/work_big/users/davini/EFAS/seasonal-v3"
 TMPDIR = "/work_big/users/davini/EFAS/tmp_regions"
 KIND = 'seasonal' # 'control' or 'ensemble'
 VERSION = 5 # version of the EFAS reforecast, only 4 tested so far
@@ -37,7 +36,7 @@ DELTA = 24 # delta between the leadtimes in hours
 CHUNKS_DOWNLOAD = 215 # number of leadtimes to download at once
 MAXLEADTIME = 215*DELTA # maximum leadtime in hours of 215 days
 date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='MS')
-REGIONS = ['Panaro', 'Timis', 'Lagen', 'Aragon']
+REGIONS = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno']
 
 
 # loop over the dates
