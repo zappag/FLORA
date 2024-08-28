@@ -29,7 +29,7 @@ os.makedirs(TMPDIR, exist_ok=True)
 
 # create biweekly loop with pandas
 START_DATE = "1999-01-01"
-END_DATE = "1999-02-01"
+END_DATE = "2022-01-01"
 BOXSIZE = .0 #how  many degrees do you want to extend the boundaries
 NENS = 25 # number of ensemble members
 DELTA = 24 # delta between the leadtimes in hours
@@ -78,7 +78,8 @@ for date in date_range:
                 logging.warning(f"File {zip_file} already exists, skipping download")
             else:
                 request =  {
-                'format': 'netcdf4.zip',
+                'data_format': 'netcdf4',
+                'download_format': 'zip',
                 'system_version': f'version_{VERSION}_0',
                 'variable': f'river_discharge_in_the_last_{DELTA}_hours',
                 'model_levels': 'surface_level',
@@ -103,7 +104,7 @@ for date in date_range:
                 zip_ref.extractall(outdir)
                 
             logging.warning("Ensemble files not processable by CDO, splitting with Xarray")
-            dataset = xr.open_dataset(f"{outdir}/mars_data_0.nc")
+            dataset = xr.open_dataset(f"{outdir}/data_0.nc")
             if MASK:
                 dataset = mask_efas(dataset, REGIONS)
             for ensemble in dataset.number.values:
@@ -123,7 +124,7 @@ for date in date_range:
                     os.remove(ensname)
 
             if CLEAN:
-                os.remove(f"{outdir}/mars_data_0.nc")
+                os.remove(f"{outdir}/data_0.nc")
                 #os.rmdir(outdir)
                 os.remove(zip_file)
             
@@ -132,7 +133,9 @@ for date in date_range:
             logging.warning("Merging multiple for chunks for ensemble member %s", ens)
             str_ensemble = str(ens).zfill(2)
             files = f"{TMPDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_*_{str_ensemble}.nc"
-            cdo.merge(input = files, output = f"{TGTDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_{str_ensemble}.nc")
+            WRITEDIR = os.path.join(TGTDIR, region)
+            os.makedirs(WRITEDIR, exist_ok=True)
+            cdo.merge(input = files, output = f"{WRITEDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_{str_ensemble}.nc")
             if CLEAN:
                 for file in glob.glob(files):
                     os.remove(file)
