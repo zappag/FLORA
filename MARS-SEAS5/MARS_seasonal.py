@@ -32,7 +32,7 @@ os.makedirs(TMPDIR, exist_ok=True)
 
 dates = ['20000801']
 MAXLEADTIME = 5160
-numbers = [1]
+numbers = range(25)
 parameters = ['228.128']
 
 steps = list(range(0, MAXLEADTIME+1, 6))
@@ -106,6 +106,8 @@ for startdate in dates:
 
             logging.warning('Selecting 60W to 60E box and compressing...')
             cdo.sellonlatbox('-60,60,0,90', input=filetmp3, output=filetgt, options='-f nc4 -z zip')
+            if CLEAN:
+                os.remove(filetmp3)
 
 
 
