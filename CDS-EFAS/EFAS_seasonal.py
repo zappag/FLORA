@@ -15,6 +15,7 @@ from cdo import *
 from functions import chunks, fixed_region, mask_efas
 cdo = Cdo()
 
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 logging.warning("Launching the EFAS seasonal downloader...")
 
 TGTDIR = "/work_big/users/davini/EFAS/seasonal-v3"
@@ -72,7 +73,7 @@ for date in date_range:
     # full leadtime
     logging.warning(f"Downloading EFAS{VERSION} reforecast {KIND} for {year}-{month}-{day} in {region}")
     lat, lon = fixed_region(name=region, delta=BOXSIZE)
-    print(lat, lon)
+    logging.warning("Region %s has boundaries -> lon %s and lat -> %s", region, lon, lat)
     steps = [str(i) for i in range(DELTA, MAXLEADTIME, DELTA)]
     for chunk in chunks(steps, n=CHUNKS_DOWNLOAD):
         target_file = f"{TMPDIR}/EFAS{VERSION}_reforecast__{region}_{year}{month}{day}_{KIND}_{chunk[0]}_{LAST}.nc"
@@ -115,36 +116,55 @@ for date in date_range:
                 zip_file)
             
         # Unzip the file
-        logging.warning(f"Unzipping the file {zip_file}...")
         outdir = zip_file.replace('.zip', '')
-        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-            zip_ref.extractall(outdir)
+        netcdf_file = glob.glob(f"{outdir}/data*.nc")[0]
+        try:
+            logging.warning("NetCDF unzipped already found as %s...", netcdf_file)
+            check = xr.open_dataset(netcdf_file)
+        except (ValueError, OSError):
+            logging.warning(f"Unzipping the file {zip_file}...")
+            with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                zip_ref.extractall(outdir)
             
         logging.warning("Ensemble files not processable by CDO, splitting with Xarray")
-        netcdf_file = glob.glob(f"{outdir}/data*.nc")[0]
-        logging.warning(f"Unzipping the file {netcdf_file}...")
         dataset = xr.open_dataset(netcdf_file)
         if MASK:
             dataset = mask_efas(dataset, REGIONS)
-        for ensemble in dataset.number.values:
-            logging.warning(f"Ensemble {ensemble}")
-            ensname = f"{outdir}/mars_data_ens{ensemble}_{chunk[0]}.nc"
-            dataset_ens = dataset.sel(number=ensemble).to_netcdf(ensname)
+        for ensemble in range(NENS):
             str_ensemble = str(ensemble).zfill(2)
             target_file = f"{TMPDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_{chunk[0]}_{str_ensemble}.nc"
+            logging.warning('Checking status of %s ...', target_file)
+            DISSEMBLE = True
+            if os.path.exists(target_file):
+                try:
+                    check = xr.open_dataset(target_file)
+                    if not len(check.forecast_period) == 0:
+                        DISSEMBLE=False
+                except ValueError:
+                    pass
 
-            delay = pd.Timedelta(int(chunk[0])/DELTA, unit="d")
-            reference_time = pd.Timestamp(f'{year}-{month}-{day}') + pd.Timedelta(delay, unit="d")
-            cdo.settaxis(f"{reference_time.strftime('%Y-%m-%d')},00:00:00,{DELTA}hours",
-                        input = ensname,
-                        output = target_file,
-                        options = '-f nc4')
-            if CLEAN:
-                os.remove(ensname)
+            if DISSEMBLE:
+                logging.warning("Ensemble %s saving from xarray...", ensemble)
+                ensname = f"{outdir}/mars_data_ens{ensemble}_{chunk[0]}.nc"
+                dataset_ens = dataset.sel(number=ensemble).to_netcdf(ensname)
+                delay = pd.Timedelta(int(chunk[0])/DELTA, unit="d")
+                reference_time = pd.Timestamp(f'{year}-{month}-{day}') + pd.Timedelta(delay, unit="d")
+                logging.warning("Ensemble %s time axis conversion...", ensemble)
+                if os.path.exists(target_file):
+                    os.remove(target_file)
+                cdo.settaxis(f"{reference_time.strftime('%Y-%m-%d')},00:00:00,{DELTA}hours",
+                            input = ensname,
+                            output = target_file,
+                            options = '-f nc4 -z zip')
+                if CLEAN:
+                    os.remove(ensname)
+            else:
+                logging.warning("Ensemble %s saving already found %s", ensemble, target_file)
+            
 
         if CLEAN:
             os.remove(netcdf_file)
-            #os.rmdir(outdir)
+            os.rmdir(outdir)
             os.remove(zip_file)
         
     # merge the files
@@ -152,10 +172,18 @@ for date in date_range:
         logging.warning("Merging multiple for chunks for ensemble member %s", ens)
         str_ensemble = str(ens).zfill(2)
         files = f"{TMPDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_*_{str_ensemble}.nc"
-        cdo.merge(input = files, output = f"{WRITEDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_{str_ensemble}.nc")
-        if CLEAN:
-            for file in glob.glob(files):
-                os.remove(file)
+        final_file = f"{WRITEDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_{str_ensemble}.nc"
+        logging.warning("%s to %s", files, final_file)
+        if len(files) > 1:
+            cdo.merge(input = files, output = final_file,
+                        options = '-f nc4')
+            if CLEAN:
+                for file in glob.glob(files):
+                    os.remove(file)
+        else:
+            logging.warning("Only one file, moving the file...")
+            os.rename(files[0], final_file)
+
 
 
 

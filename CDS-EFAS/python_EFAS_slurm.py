@@ -3,7 +3,7 @@
 import subprocess
 
 # Define the list of years and regions to loop through
-years = range(2020, 2021)
+years = range(2006, 2007)
 regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno']
 
 # SLURM submission script
