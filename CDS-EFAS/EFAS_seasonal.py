@@ -9,7 +9,6 @@ import glob
 import time
 import logging
 import argparse
-import shutil
 import cdsapi
 import pandas as pd
 import xarray as xr
@@ -54,8 +53,8 @@ NENS = 25 # number of ensemble members
 DELTA = 24 # delta between the leadtimes in hours
 CHUNKS_DOWNLOAD = 215 # number of leadtimes to download at once
 MAXLEADTIME = 215*DELTA # maximum leadtime in hours of 215 days
-MAX_RETRIES = 10
-WAIT_TIME = 60
+MAX_RETRIES = 100
+WAIT_TIME = 120
 date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='MS')
 
 # Check if the region provided is in the predefined list
@@ -74,7 +73,7 @@ for date in date_range:
     os.makedirs(WRITEDIR, exist_ok=True)
     target_file = f"{WRITEDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_{LAST}.nc"
     if os.path.exists(target_file):
-        print(f"File {target_file} already exists, skipping download")
+        logging.warning(f"File {target_file} already exists, skipping download")
         continue
 
     # full leadtime
@@ -116,7 +115,7 @@ for date in date_range:
                 }
             logging.warning("Launcing the CDSAPI request...")
             logging.warning(request)
-            c = cdsapi.Client(timeout=600, sleep_max=1200)
+            c = cdsapi.Client(timeout=600, sleep_max=10)
             retries = 0
             while retries < MAX_RETRIES:
                 try:
@@ -126,20 +125,30 @@ for date in date_range:
                     if retries == 0:
                         mycall = c.retrieve('efas-seasonal-reforecast', request, zip_file)
                     else:
-                        mycall = c.download(zip_file)
+                        #c.download(zip_file)
+                        c.retrieve('efas-seasonal-reforecast', request, zip_file)
                     
                     logging.warning(f"Download successful on attempt {retries + 1}")
                     break
                     
                 except Exception as e:
+                    retries += 1
                     # Catch and check if it's a protocol-related error
                     if 'protocol' in str(e).lower():
-                        retries += 1
-                        print(f"Protocol error on attempt {retries}. Retrying in {WAIT_TIME} seconds...")
+                        logging.error(f"Protocol error on attempt {retries}. Retrying in {WAIT_TIME} seconds...")
                         time.sleep(WAIT_TIME)  # Wait before retrying
+                    elif 'bad request' in str(e).lower():
+                        logging.error(f"Bad request error on attempt {retries}. Retrying in {WAIT_TIME} seconds...")
+                        time.sleep(WAIT_TIME)  # Wait before retrying
+                    elif 'broken' in str(e).lower():
+                        logging.error(f"Broken connection error on attempt {retries}. Retrying in {WAIT_TIME} seconds...")
+                        time.sleep(WAIT_TIME)
                     else:
                         # If the error is not related to the protocol, re-raise the exception
                         raise e
+            if retries >= MAX_RETRIES:
+                raise KeyError('Cannot proceed, number of maximum tentative achieved!')
+
             
         # Unzip the file
         outdir = zip_file.replace('.zip', '')
@@ -201,9 +210,12 @@ for date in date_range:
                     #os.remove(boxname)
             else:
                 logging.warning("Ensemble %s saving already found %s", ensemble, target_file)
-            
-
         
+        if CLEAN:
+            os.remove(netcdf_file[0])
+            os.rmdir(outdir)
+            os.remove(zip_file)
+             
     # merge the files
     for ens in range(NENS):
         logging.warning("Merging multiple for chunks for ensemble member %s", ens)
@@ -222,9 +234,8 @@ for date in date_range:
             logging.warning("Only one file, moving the file...")
             os.rename(files[0], final_file)
 
-if CLEAN:
-    shutil.rmtree(outdir)
-    os.remove(zip_file)
+
+logging.warning('Everything completed, it is time to get a life!')
 
 
 
