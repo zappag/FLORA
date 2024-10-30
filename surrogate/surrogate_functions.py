@@ -42,6 +42,7 @@ def find_matching_files(date, region, ensemble_name, path):
     """Generate file path pattern and find matching files for a given date."""
     year = date.strftime('%Y')
     yearmonth = date.strftime('%Y%m')
+    ensemble_name = str(ensemble_name).zfill(2)
     file_pattern = os.path.join(path, region, year, f"EFAS5_reforecast_{region}_{yearmonth}01_seasonal_{ensemble_name}.nc")
     matched_files = glob.glob(file_pattern)
     return matched_files
