@@ -1,3 +1,5 @@
+"""EFAS/SEAS downloader helper functions"""
+
 # help functions
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
@@ -17,6 +19,8 @@ def get_regions(name):
         return (42, 43.2), (-2.5, -0.25)
     if name == 'reno':
         return (43.9, 44.9), (10.75, 12.3)
+    if name == 'euro':
+        return (30, 70), (-60, 60)
     if name == 'global':
         return (24,72), (-35,75)
 
