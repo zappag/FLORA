@@ -105,7 +105,7 @@ for startdate in dates:
                 os.rename(filetmp2, filetmp3)
 
             logging.warning('Selecting 60W to 60E box and compressing...')
-            cdo.sellonlatbox('-60,60,0,90', input=filetmp3, output=filetgt, options='-f nc4 -z zip')
+            cdo.sellonlatbox('-60,60,30,80', input=filetmp3, output=filetgt, options='-f nc4 -z zip')
             if CLEAN:
                 os.remove(filetmp3)
 

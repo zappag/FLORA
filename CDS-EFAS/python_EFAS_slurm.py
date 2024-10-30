@@ -3,7 +3,7 @@
 import subprocess
 
 # Define the list of years and regions to loop through
-years = range(2006, 2007)
+years = range(2001, 2010)
 regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno']
 
 # SLURM submission script
@@ -16,8 +16,8 @@ for year in years:
         command = [
             'sbatch',
             f'--job-name=EFAS_{year}_{region}',            # Job name
-            f'--output=/home/davini/EFAS-{year}-{region}-%j.out', # Output file
-            f'--error=/home/davini/EFAS-{year}-{region}-%j.err',  # Error file
+            f'--output=/home/davini/log/EFAS-{year}-{region}-%j.out', # Output file
+            f'--error=/home/davini/log/EFAS-{year}-{region}-%j.err',  # Error file
             '--mem=4000M',                      # Memory
             '--time=48:00:00',                  # Max run time
             '--partition=batch',                # SLURM partition

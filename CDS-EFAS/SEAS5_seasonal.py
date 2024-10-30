@@ -5,8 +5,8 @@
 
 import os
 import glob
-import cdsapi
 import logging
+import cdsapi
 import pandas as pd
 import xarray as xr
 from cdo import *
@@ -18,7 +18,6 @@ logging.warning("Launching the SEAS5 seasonal downloader...")
 TGTDIR = "/work_big/users/davini/SEAS5/seasonal-v1"
 TMPDIR = "/work_big/users/davini/SEAS5/tmp"
 CLEAN = True # remove the temporary files
-MASK = False # to mask everything
 
 # create the target directory if it does not exist
 os.makedirs(TGTDIR, exist_ok=True)

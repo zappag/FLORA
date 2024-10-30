@@ -51,7 +51,7 @@ END_DATE = f"{year1}-01-01"
 BOXSIZE = .0 #how  many degrees do you want to extend the boundaries
 NENS = 25 # number of ensemble members
 DELTA = 24 # delta between the leadtimes in hours
-CHUNKS_DOWNLOAD = 215 # number of leadtimes to download at once
+CHUNKS_DOWNLOAD = 22 # number of leadtimes to download at once
 MAXLEADTIME = 215*DELTA # maximum leadtime in hours of 215 days
 MAX_RETRIES = 100
 WAIT_TIME = 120
@@ -82,12 +82,13 @@ for date in date_range:
     logging.warning("Region %s has boundaries -> lon %s and lat -> %s", region, lon, lat)
     steps = [str(i) for i in range(DELTA, MAXLEADTIME, DELTA)]
     for chunk in chunks(steps, n=CHUNKS_DOWNLOAD):
-        target_file = f"{TMPDIR}/EFAS{VERSION}_reforecast__{region}_{year}{month}{day}_{KIND}_{chunk[0]}_{LAST}.nc"
+        target_file = f"{TMPDIR}/EFAS{VERSION}_reforecast_{region}_{year}{month}{day}_{KIND}_{chunk[0]}_{LAST}.nc"
+        logging.warning('Target file is %s', target_file)
         if os.path.exists(target_file):
             logging.warning(f"File {target_file} already exists, skipping download")
             continue
 
-        zip_file = f"{TMPDIR}/EFAS_reforecast_{region}_{year}{month}{day}_{KIND}_{chunk[0]}.zip"
+        zip_file = f"{TMPDIR}/NEW_EFAS_reforecast_{region}_{year}{month}{day}_{KIND}_{chunk[0]}.zip"
 
         # first check if the zip file is corrupted
         if os.path.exists(zip_file):
@@ -113,20 +114,21 @@ for date in date_range:
             'area': [lat[1], lon[0], lat[0], lon[1]]
             #'leadtime_hour': [str(i) for i in range(0, 5161, 24)]
                 }
-            logging.warning("Launcing the CDSAPI request...")
+            logging.warning("Launching the CDSAPI request...")
             logging.warning(request)
-            c = cdsapi.Client(timeout=600, sleep_max=10)
+            c = cdsapi.Client(url='https://ewds.climate.copernicus.eu/api',
+                              timeout=600, sleep_max=10)
             retries = 0
             while retries < MAX_RETRIES:
                 try:
                     logging.warning(f"Attempt {retries + 1} of {MAX_RETRIES}")
                     
                     # Attempt to download the data
-                    if retries == 0:
-                        mycall = c.retrieve('efas-seasonal-reforecast', request, zip_file)
-                    else:
-                        #c.download(zip_file)
-                        c.retrieve('efas-seasonal-reforecast', request, zip_file)
+                    #if retries == 0:
+                    mycall = c.retrieve('efas-seasonal-reforecast', request, zip_file)
+                    #else:
+                    #    #c.download(zip_file)
+                    #    c.retrieve('efas-seasonal-reforecast', request, zip_file)
                     
                     logging.warning(f"Download successful on attempt {retries + 1}")
                     break
@@ -225,7 +227,7 @@ for date in date_range:
         files = glob.glob(files)
         logging.warning("%s to %s", files, final_file)
         if len(files) > 1:
-            cdo.merge(input = files, output = final_file,
+            cdo.mergetime(input = files, output = final_file,
                         options = '-f nc4')
             if CLEAN:
                 for file in files:
