@@ -9,15 +9,15 @@ def get_regions(name):
     name = name.lower()
     if name == 'panaro':
         return (44, 45.2), (10.25, 11.75)
-    elif name == 'timis':
+    if name == 'timis':
         return (44.6, 46.25), (20, 23)
-    elif name == 'lagen':
+    if name == 'lagen':
         return (60, 62.5), (7, 12)
-    elif name == 'aragon':
+    if name == 'aragon':
         return (42, 43.2), (-2.5, -0.25)
-    elif name == 'reno':
+    if name == 'reno':
         return (43.9, 44.9), (10.75, 12.3)
-    elif name == 'global':
+    if name == 'global':
         return (24,72), (-35,75)
 
     raise ValueError(f"Region {name} not found")
