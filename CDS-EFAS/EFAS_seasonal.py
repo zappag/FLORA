@@ -59,8 +59,6 @@ if __name__ == "__main__":
     os.makedirs(TGTDIR, exist_ok=True)
     os.makedirs(TMPDIR, exist_ok=True)
 
-    KIND = 'seasonal'
-
     if mode == "EFAS":
         DELTA = 24 # delta between the leadtimes in hours
         VERSION = 5 # version of the EFAS reforecast
@@ -69,17 +67,15 @@ if __name__ == "__main__":
         URL = 'https://ewds.climate.copernicus.eu/api'
         DATASET_NAME = 'efas-seasonal-reforecast'
         CHUNKS_DOWNLOAD = 22 # number of leadtimes to download at once
-        MAXLEADTIME = 215*DELTA # maximum leadtime in hours of 215 days
+
 
     elif mode == "SEAS5":
         DELTA = 6 # delta between the leadtimes in hours
-        variables = ['mean_sea_level_pressure', 'total_precipitation']
+        variables = ['mean_sea_level_pressure']
         modename = mode
         URL = 'https://cds.climate.copernicus.eu/api'
         DATASET_NAME = 'seasonal-original-single-levels'
         CHUNKS_DOWNLOAD = 5160 # number of leadtimes to download at once
-        MAXLEADTIME = 5160 # maximum leadtime in hours of 215 days
-    
     else:
         raise ValueError(f'Unknown model {mode}')
 
@@ -87,6 +83,8 @@ if __name__ == "__main__":
     END_DATE = f"{year1}-01-01"
     BOXSIZE = .0 #how  many degrees do you want to extend the boundaries
     NENS = 25 # number of ensemble members
+    KIND = 'seasonal'
+    MAXLEADTIME = 5160 # maximum leadtime in hours of 215 days
     
 
     MAX_RETRIES = 100
@@ -94,7 +92,7 @@ if __name__ == "__main__":
     date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='MS')
 
     # Check if the region provided is in the predefined list
-    REGIONS = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno', 'Euro', 'Global']
+    REGIONS = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno', 'Euro', 'Global', 'Turia']
     if region not in REGIONS:
         raise ValueError(f"Region '{region}' is not a valid region. Choose from {REGIONS}")
 
@@ -127,7 +125,7 @@ if __name__ == "__main__":
                 target_file = f"{TMPDIR}/{modename}_reforecast_{namedefinition}_{year}{month}{day}_{KIND}_{chunk[0]}_{LAST}.nc"
                 logging.warning('Target file is %s', target_file)
                 if os.path.exists(target_file):
-                    logging.warning(f"File {target_file} already exists, skipping download")
+                    logging.warning("File %s already exists, skipping download",  target_file)
                     continue
 
                 download_file = f"{TMPDIR}/NEW_{mode}_reforecast_{namedefinition}_{year}{month}{day}_{KIND}_{chunk[0]}"
@@ -162,7 +160,6 @@ if __name__ == "__main__":
                         'hmonth': month,
                         'leadtime_hour': chunk,
                         'area': [lat[1], lon[0], lat[0], lon[1]]
-                        #'leadtime_hour': [str(i) for i in range(0, 5161, 24)]
                             }
                     elif mode == "SEAS5":
                         request =  {
@@ -175,7 +172,6 @@ if __name__ == "__main__":
                         'day': '01',
                         'leadtime_hour': chunk,
                         'area': [lat[1], lon[0], lat[0], lon[1]]
-                        #'leadtime_hour': [str(i) for i in range(0, 5161, 24)]
                             }
                     else:
                         raise ValueError(f'Unknown model {mode}')
@@ -197,14 +193,15 @@ if __name__ == "__main__":
                             retries += 1
                             # Catch and check if it's a protocol-related error
                             if 'protocol' in str(e).lower():
-                                logging.error(f"Protocol error on attempt {retries}. Retrying in {WAIT_TIME} seconds...")
+                                logging.error("Protocol error on attempt %d. Retrying in %d seconds...", retries, WAIT_TIME)
                                 time.sleep(WAIT_TIME)  # Wait before retrying
                             elif 'bad request' in str(e).lower():
-                                logging.error(f"Bad request error on attempt {retries}. Retrying in {WAIT_TIME} seconds...")
+                                logging.error("Bad request error on attempt %d. Retrying in %d seconds...", retries, WAIT_TIME)
                                 time.sleep(WAIT_TIME)  # Wait before retrying
                             elif 'broken' in str(e).lower():
-                                logging.error(f"Broken connection error on attempt {retries}. Retrying in {WAIT_TIME} seconds...")
+                                logging.error("Broken connection error on attempt %d. Retrying in %d seconds...", retries, WAIT_TIME)
                                 time.sleep(WAIT_TIME)
+
                             else:
                                 # If the error is not related to the protocol, re-raise the exception
                                 raise e
@@ -215,11 +212,15 @@ if __name__ == "__main__":
                 # Unzip the file
                 if mode == "EFAS":
                     outdir = download_file.replace('.zip', '')
-                    netcdf_file = glob.glob(f"{outdir}/data*.nc")[0]
+                    netcdf_file = glob.glob(f"{outdir}/data*.nc")
+                    logging.warning('Find file %s', netcdf_file)
                     try:
-                        check = xr.open_dataset(netcdf_file)
-                        logging.warning("NetCDF unzipped already found as %s...", netcdf_file)
-                    except (ValueError, OSError, IndexError):
+                        if netcdf_file:
+                            check = xr.open_dataset(netcdf_file[0])
+                            logging.warning("NetCDF unzipped already found as %s...", netcdf_file[0])
+                        else:
+                            raise FileNotFoundError("No NetCDF file found, proceeding to unzip.")
+                    except (ValueError, OSError, IndexError, FileNotFoundError):
                         logging.warning("Unzipping the file %s ...", download_file)
                         with zipfile.ZipFile(download_file, 'r') as zip_ref:
                             zip_ref.extractall(outdir)
@@ -253,6 +254,7 @@ if __name__ == "__main__":
                         dataset_ens = dataset.sel(number=ensemble,
                                                 latitude=slice(lat[1],lat[0]),
                                                 longitude=slice(lon[0],lon[1]))
+                        # special treatment for SEAS5 time axis
                         if mode == "SEAS5":
                             dataset_ens = dataset_ens.drop_vars('forecast_period')
                             dataset_ens = dataset_ens.rename({'valid_time': 'forecast_period'})#.set_index(forecast_period='forecast_period')
@@ -270,12 +272,12 @@ if __name__ == "__main__":
                         
                         logging.warning("Ensemble %s time axis conversion...", ensemble)
                         if mode == "EFAS":
-                            delay = pd.Timedelta(int(chunk[0])/DELTA, unit="d")
-                            reference_time = pd.Timestamp(f'{year}-{month}-{day}') + delay
+                            delay = pd.Timedelta(int(chunk[0])/DELTA, unit="d")       
                         else:
                             delay = pd.Timedelta(int(chunk[0]), unit="h")
-                            reference_time = pd.Timestamp(f'{year}-{month}-{day}') + delay
+                        reference_time = pd.Timestamp(f'{year}-{month}-{day}') + delay
                         logging.warning("Reference time will be %s ...", reference_time)
+
                         if os.path.exists(target_file):
                             os.remove(target_file)
                         cdo.settaxis(f"{reference_time.strftime('%Y-%m-%d,%H:%M:%S')},{DELTA}hours",
@@ -289,9 +291,12 @@ if __name__ == "__main__":
                         logging.warning("Ensemble %s saving already found %s", ensemble, target_file)
                 
                 if clean:
-                    os.remove(netcdf_file)
-                    os.rmdir(outdir)
-                    os.remove(download_file)
+                    if os.path.exists(netcdf_file):
+                        os.remove(netcdf_file)
+                    if os.path.exists(outdir):
+                        os.rmdir(outdir)
+                    if os.path.exists(download_file):
+                        os.remove(download_file)
                 
             # merge the files
             for ens in range(NENS):

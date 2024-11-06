@@ -3,8 +3,14 @@
 import subprocess
 
 # Define the list of years and regions to loop through
-years = range(2001, 2010)
-regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno']
+years = range(1999, 2024)
+mode = "EFAS"
+
+if mode == "EFAS":
+    regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno']
+    #regions = ['Turia']
+else:
+    regions = ['Euro']
 
 # SLURM submission script
 slurm_script = 'EFAS_seasonal.py'  # The SLURM script you created earlier
@@ -15,18 +21,18 @@ for year in years:
         # Create the sbatch command with the year and region as arguments
         command = [
             'sbatch',
-            f'--job-name=EFAS_{year}_{region}',            # Job name
-            f'--output=/home/davini/log/EFAS-{year}-{region}-%j.out', # Output file
-            f'--error=/home/davini/log/EFAS-{year}-{region}-%j.err',  # Error file
+            f'--job-name={mode}_{year}_{region}',            # Job name
+            f'--output=/home/davini/log/{mode}-{year}-{region}-%j.out', # Output file
+            f'--error=/home/davini/log/{mode}-{year}-{region}-%j.err',  # Error file
             '--mem=4000M',                      # Memory
             '--time=48:00:00',                  # Max run time
             '--partition=batch',                # SLURM partition
             '--wrap',                           # Wrap the Python command within SLURM
-            f'python EFAS_seasonal.py --year {year} --region {region}'  # Command to run
+            f'python {slurm_script} {mode} --year {year} --region {region} -c'  # Command to run
         ]
         
         # Print the command to the terminal for debugging purposes
-        print(f"Submitting job for Year: {year}, Region: {region}")
+        print(f"Submitting job for {mode} for year: {year}, Region: {region}")
         
         # Submit the job to SLURM
         try:
