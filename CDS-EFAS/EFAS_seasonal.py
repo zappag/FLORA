@@ -23,6 +23,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 logging.warning("Launching the EFAS/SEAS seasonal downloader...")
 
 KIND = 'seasonal'
+roll_longitude = True #if longitudes are 0 to 360
 
 
 # Set up command line argument parsing
@@ -128,7 +129,7 @@ if __name__ == "__main__":
                     logging.warning("File %s already exists, skipping download",  target_file)
                     continue
 
-                download_file = f"{TMPDIR}/NEW_{mode}_reforecast_{namedefinition}_{year}{month}{day}_{KIND}_{chunk[0]}"
+                download_file = f"{TMPDIR}/GNU_{mode}_reforecast_{namedefinition}_{year}{month}{day}_{KIND}_{chunk[0]}"
 
                 if mode == "SEAS5":
                     download_file = download_file + '.nc'
@@ -212,12 +213,12 @@ if __name__ == "__main__":
                 # Unzip the file
                 if mode == "EFAS":
                     outdir = download_file.replace('.zip', '')
-                    netcdf_file = glob.glob(f"{outdir}/data*.nc")
+                    netcdf_file = glob.glob(f"{outdir}/data*.nc")[0]
                     logging.warning('Find file %s', netcdf_file)
                     try:
                         if netcdf_file:
-                            check = xr.open_dataset(netcdf_file[0])
-                            logging.warning("NetCDF unzipped already found as %s...", netcdf_file[0])
+                            check = xr.open_dataset(netcdf_file)
+                            logging.warning("NetCDF unzipped already found as %s...", netcdf_file)
                         else:
                             raise FileNotFoundError("No NetCDF file found, proceeding to unzip.")
                     except (ValueError, OSError, IndexError, FileNotFoundError):
@@ -251,6 +252,9 @@ if __name__ == "__main__":
                     if DISSEMBLE:
                         logging.warning("Ensemble %s saving from xarray...", ensemble)
                         ensname = f"{outdir}/mars_data_ens{ensemble}_{chunk[0]}.nc"
+                        if roll_longitude:
+                            dataset["longitude"] = ((dataset["longitude"] + 180) % 360) - 180
+                            dataset = dataset.sortby("longitude")
                         dataset_ens = dataset.sel(number=ensemble,
                                                 latitude=slice(lat[1],lat[0]),
                                                 longitude=slice(lon[0],lon[1]))
