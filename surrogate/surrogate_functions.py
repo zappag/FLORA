@@ -24,10 +24,6 @@ def load_and_filter_file(filepath, discard_months, lead_months):
     end_date = start_date + pd.DateOffset(months=lead_months-discard_months) - pd.DateOffset(days=1)
 
     selected_data = []
-
-    print(start_date)
-    print(end_date)
-
     selection = ds.sel(forecast_period=slice(start_date, end_date))
 
     if selection.forecast_period.size > 0:
@@ -46,17 +42,26 @@ def find_matching_files(date, region, ensemble_name, path):
     matched_files = glob.glob(file_pattern)
     return matched_files
 
-def save_to_netcdf(dataset, path, region, surrogate_kind, ensemble):
-    # Extract the first timestep and get its month abbreviation
-    first_timestamp = dataset['forecast_period'].values[0]  # Assumes 'time' coordinate exists
-    first_month_abbr = pd.to_datetime(first_timestamp).strftime('%b')  # E.g., 'Jan' for January
+def target_filename(path, region, surrogate_kind, ensemble, offset_string):
+    """Create target filename structure"""
 
-    # Generate structured filename
-    #offset_months = offset.kwds['months']
-    filename = f"{path}/EFAS5_surrogate_{region}_{surrogate_kind}_{first_month_abbr}_{ensemble}.nc"
+    final_directory = os.path.join(path, surrogate_kind, region, offset_string)
+    os.makedirs(final_directory, exist_ok=True)
+    filename = os.path.join(final_directory,
+                            f"EFAS5_surrogate_{region}_{surrogate_kind}_{offset_string}_{ensemble}.nc")
+
+    return filename
+
+
+def save_to_netcdf(dataset, filename):
+    """Save NetCDF file"""
+    # Extract the first timestep and get its month abbreviation
+    #first_timestamp = dataset['forecast_period'].values[0]  # Assumes 'time' coordinate exists
+    #first_month_abbr = pd.to_datetime(first_timestamp).strftime('%b')  # E.g., 'Jan' for January
+
 
     # Set compression options for variables
-    compression = {"zlib": True, "complevel": 1} 
+    compression = {"zlib": True, "complevel": 1}
     encoding = {var: compression for var in dataset.data_vars}  # Apply to all variables in dataset
 
     # Save to NetCDF with compression and structured filename
@@ -64,7 +69,8 @@ def save_to_netcdf(dataset, path, region, surrogate_kind, ensemble):
     print(f"Data saved to {filename}")
 
 def get_surrogate_details(surrogate_kind, lead_months=7):
-    # Define discard_month, variants, and pd_delta based on surrogate_kind
+    """Define discard_month, variants, and pd_delta based on surrogate_kind"""
+
     if surrogate_kind == 'monthly':
         discard_month = 1
     elif surrogate_kind == 'trimestral':
