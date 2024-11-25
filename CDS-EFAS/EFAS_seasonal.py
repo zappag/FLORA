@@ -9,8 +9,8 @@ import glob
 import time
 import logging
 import argparse
-import cdsapi
 import warnings
+import cdsapi
 import pandas as pd
 import xarray as xr
 
@@ -23,8 +23,10 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 logging.warning("Launching the EFAS/SEAS seasonal downloader...")
 
 KIND = 'seasonal'
-roll_longitude = True #if longitudes are 0 to 360
 
+# from Nov-24 longitudes are been moved to 0:360. 
+# use this flag to roll back to -180:180
+roll_longitude = True
 
 # Set up command line argument parsing
 def parse_args():
@@ -90,7 +92,7 @@ if __name__ == "__main__":
 
     MAX_RETRIES = 100
     WAIT_TIME = 120
-    date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='MS')
+    date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='MS', inclusive='left')
 
     # Check if the region provided is in the predefined list
     REGIONS = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno', 'Euro', 'Global', 'Turia']
@@ -198,7 +200,8 @@ if __name__ == "__main__":
                                 time.sleep(WAIT_TIME)  # Wait before retrying
                             elif 'bad request' in str(e).lower():
                                 logging.error("Bad request error on attempt %d. Retrying in %d seconds...", retries, WAIT_TIME)
-                                time.sleep(WAIT_TIME)  # Wait before retrying
+                                retries = MAX_RETRIES
+                               #time.sleep(WAIT_TIME)  # Wait before retrying
                             elif 'broken' in str(e).lower():
                                 logging.error("Broken connection error on attempt %d. Retrying in %d seconds...", retries, WAIT_TIME)
                                 time.sleep(WAIT_TIME)
@@ -213,10 +216,11 @@ if __name__ == "__main__":
                 # Unzip the file
                 if mode == "EFAS":
                     outdir = download_file.replace('.zip', '')
-                    netcdf_file = glob.glob(f"{outdir}/data*.nc")[0]
+                    netcdf_file = glob.glob(f"{outdir}/data*.nc")
                     logging.warning('Find file %s', netcdf_file)
                     try:
                         if netcdf_file:
+                            netcdf_file = netcdf_file[0]
                             check = xr.open_dataset(netcdf_file)
                             logging.warning("NetCDF unzipped already found as %s...", netcdf_file)
                         else:
