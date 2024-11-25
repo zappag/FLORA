@@ -27,14 +27,18 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Parse parameters for surrogate file generation")
 
     # Required positional argument for region
-    parser.add_argument("region", type=str, help="Region name")
+    parser.add_argument("mode", type=str, help="EFAS/SEAS5 surrogate series creator")
 
     # Optional arguments for ensemble and surrogate kind
-    parser.add_argument("-e", "--ensemble", type=str, default="22",
+    parser.add_argument("-e", "--ensemble", type=str,
+                        help="Ensemble name or number", required=True)
+    parser.add_argument("-r", "--region", type=str,
                         help="Ensemble name or number (default: '22')")
-    parser.add_argument("-m", "--mode", type=str, choices=['monthly', 'trimestral', 'quadrimestral'],
+    parser.add_argument("-s", "--surrogate", type=str, choices=['monthly', 'trimestral', 'quadrimestral'],
                         default ="monthly",
                         help="Surrogate kind mode: choose from 'monthly', 'trimestral', or 'quadrimestral'")
+    parser.add_argument("-v", "--variable", type=str, help="variable to be surrogated",
+                        default='dis24')
 
     # Parse the arguments
     args = parser.parse_args()
@@ -52,12 +56,25 @@ if __name__ == "__main__":
 
     mode = args.mode
     region = args.region
+    surrogate_kind = args.surrogate
+    variable = args.variable
     ensemble_name = str(args.ensemble).zfill(2)
 
-    logging.warning(f'Running {region} for {ensemble_name} in {mode} mode')
+    ecmwf_conversion = {
+        'dis24': 'dis24',
+        'msl': 'mean_sea_level_pressure'
+    }
+    matchvariable = ecmwf_conversion.get(variable)
+    if matchvariable is None:
+        raise KeyError(f'Cannot find ECMWF matching for {variable}, please edit the table')
+
+    source = f'/work_big/users/davini/{mode}/seasonal-v4'
+    target = f'/work_big/users/davini/{mode}/surrogate-v1'
+
+    logging.warning(f'Running for {variable} on {region} for {ensemble_name} in {surrogate_kind} mode')
 
     # get info on the different surrogate options
-    discard_month, variants, pd_delta = get_surrogate_details(surrogate_kind=mode, lead_months=lead_months)
+    discard_month, variants, pd_delta = get_surrogate_details(surrogate_kind=surrogate_kind, lead_months=lead_months)
 
     logging.warning(f'Discarding {discard_month} month for {len(variants)} variants with delta of {pd_delta}')
 
@@ -68,7 +85,9 @@ if __name__ == "__main__":
         date_list = pd.date_range(start=start_date, end=end_date, freq=pd_delta).tolist()
         date_list = [date + offset for date in date_list]
         offset_string = (date_list[0] + pd.DateOffset(months=discard_month)).strftime('%b')
-        output_filename = target_filename(target, region, mode, ensemble_name, offset_string)
+        output_filename = target_filename(path=target, region=region, mode=mode,
+                                          variable=variable, surrogate_kind=surrogate_kind,
+                                          ensemble=ensemble_name, offset_string=offset_string)
         if os.path.exists(output_filename):
             logging.warning(f"File {output_filename} is already there, skipping!")
             continue
@@ -77,13 +96,14 @@ if __name__ == "__main__":
         surrogate = []
         for date in date_list:
             logging.warning(f"Date: {date}")
-            matched_files = find_matching_files(date, region, ensemble_name, source)
+            matched_files = find_matching_files(date=date, mode=mode, region=region, variable=matchvariable,
+                                                ensemble_name=ensemble_name, path=source)
             logging.warning(f"Matching files for {date}: {matched_files}")
             selected_data = load_and_filter_file(filepath=matched_files[0],
                                             discard_months=discard_month, lead_months=lead_months)
-            logging.warning(f"Shape: {selected_data['dis24'].shape}")
-            mindate =  pd.to_datetime(selected_data['forecast_period'].min().item()).strftime('%Y-%m-%d')
-            maxdate =  pd.to_datetime(selected_data['forecast_period'].max().item()).strftime('%Y-%m-%d')
+            logging.warning(f"Shape: {selected_data[variable].shape}")
+            mindate =  pd.to_datetime(selected_data['forecast_period'].min().item()).strftime('%Y-%m-%d %H:%M')
+            maxdate =  pd.to_datetime(selected_data['forecast_period'].max().item()).strftime('%Y-%m-%d %H:%M')
             logging.warning(f"Startdate: {mindate}, Enddate: {maxdate}")
             if selected_data is not None:
                 surrogate.append(selected_data)

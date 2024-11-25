@@ -12,17 +12,21 @@ def load_and_filter_file(filepath, discard_months, lead_months):
     ds = xr.open_dataset(filepath)
 
     # define a real time axis in numpy
-    ds['forecast_period'] = pd.to_datetime(ds['forecast_period'].astype(int).astype(str), format="%Y%m%d")
+    if isinstance(ds['forecast_period'].values[0], float):
+        ds['forecast_period'] = pd.to_datetime(ds['forecast_period'].astype(int).astype(str), format="%Y%m%d")
+
+    #get offset from data
+    time_diff = ds['forecast_period'].diff(dim='forecast_period')[0].item()
+    time_delta = pd.Timedelta(time_diff)
+    date_offset = pd.tseries.frequencies.to_offset(time_delta)
 
     # drop reference time
     ds = ds.drop_vars('forecast_reference_time')
 
-    # removing one day because of the missing initial timestamp
-    start_date = ds['forecast_period'].min().values + pd.DateOffset(months=discard_months) - pd.DateOffset(day=1)
-    
+    # removing one timestamp because of the missing initial timestamp
+    start_date = ds['forecast_period'].min().values + pd.DateOffset(months=discard_months) - date_offset
     # Define the ending point based on lead months
-    end_date = start_date + pd.DateOffset(months=lead_months-discard_months) - pd.DateOffset(days=1)
-
+    end_date = start_date + pd.DateOffset(months=lead_months - discard_months) - date_offset
     selected_data = []
     selection = ds.sel(forecast_period=slice(start_date, end_date))
 
@@ -34,21 +38,27 @@ def load_and_filter_file(filepath, discard_months, lead_months):
     
     return None
     
-def find_matching_files(date, region, ensemble_name, path):
+def find_matching_files(date, mode, region, variable, ensemble_name, path):
     """Generate file path pattern and find matching files for a given date."""
     year = date.strftime('%Y')
     yearmonth = date.strftime('%Y%m')
-    file_pattern = os.path.join(path, region, year, f"EFAS5_reforecast_{region}_{yearmonth}01_seasonal_{ensemble_name}.nc")
+    modenodigit = ''.join([i for i in mode if not i.isdigit()])
+    if variable == 'dis24': #HACK for dis24
+        variable = ''
+    file_pattern = os.path.join(path, region, year,
+                                f"{modenodigit}5_reforecast_{region}*{variable}*{yearmonth}01_seasonal_{ensemble_name}.nc")
+    print(file_pattern)
     matched_files = glob.glob(file_pattern)
     return matched_files
 
-def target_filename(path, region, surrogate_kind, ensemble, offset_string):
+def target_filename(path, region, mode, variable, surrogate_kind, ensemble, offset_string):
     """Create target filename structure"""
 
     final_directory = os.path.join(path, surrogate_kind, region, offset_string)
     os.makedirs(final_directory, exist_ok=True)
+    modenodigit = ''.join([i for i in mode if not i.isdigit()])
     filename = os.path.join(final_directory,
-                            f"EFAS5_surrogate_{region}_{surrogate_kind}_{offset_string}_{ensemble}.nc")
+                            f"{modenodigit}5_surrogate_{region}_{variable}_{surrogate_kind}_{offset_string}_{ensemble}.nc")
 
     return filename
 
