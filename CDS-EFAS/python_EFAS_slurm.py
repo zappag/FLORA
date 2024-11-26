@@ -3,12 +3,12 @@
 import subprocess
 
 # Define the list of years and regions to loop through
-years = range(1999, 2024)
+years = range(2015, 2024)
 mode = "EFAS"
 
 if mode == "EFAS":
-    regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno']
-    #regions = ['Turia']
+    regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno', 'Turia']
+    regions = ['Turia']
 else:
     regions = ['Euro']
 

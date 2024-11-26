@@ -2,15 +2,13 @@
 
 import subprocess
 
-mode = 'EFAS'
-#mode = 'SEAS5'
+#mode = 'EFAS'
+mode = 'SEAS5'
 
 # Define the list of ensembles and regions to loop through
 ensembles = range(0, 25)
 #ensembles = [0, 1]
 
-#regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno', 'Turia']
-regions = ['Panaro']
 
 surrogates = ['monthly', 'trimestral', 'quadrimestral']
 #modes = ['monthly']
@@ -20,8 +18,11 @@ slurm_script = 'EFAS_surrogate.py'  # The SLURM script you created earlier
 
 if mode == 'EFAS':
     variables = ['dis24']
+    #regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno', 'Turia']
+    regions = ['Panaro']
 elif mode == 'SEAS5':
     variables = ['msl']
+    regions = ['Euro']
 else:
     raise KeyError(f'Cannot recognize {mode} mode')
 
@@ -33,14 +34,14 @@ for ensemble in ensembles:
             # Create the sbatch command with the ensemble and region as arguments
                 command = [
                     'sbatch',
-                    f'--job-name={mode}_{ensemble}_{region}',            # Job name
-                    f'--output=/home/davini/log/{mode}-{ensemble}-{region}-%j.out', # Output file
-                    f'--error=/home/davini/log/{mode}-{ensemble}-{region}-%j.err',  # Error file
+                    f'--job-name={mode}_{surrogate}_{ensemble}_{region}',            # Job name
+                    f'--output=/home/davini/log/{mode}_{surrogate}-{ensemble}-{region}-%j.out', # Output file
+                    f'--error=/home/davini/log/{mode}_{surrogate}-{ensemble}-{region}-%j.err',  # Error file
                     '--mem=4000M',                      # Memory
-                    '--time=01:00:00',                  # Max run time
+                    '--time=02:00:00',                  # Max run time
                     '--partition=batch',                # SLURM partition
                     '--wrap',                           # Wrap the Python command within SLURM
-                    f'python {slurm_script} {mode} --region {region} --ensemble {ensemble} --mode {mode} --variable {variable}'  # Command to run
+                    f'python {slurm_script} {mode} --region {region} --ensemble {ensemble} --surrogate {surrogate} --variable {variable}'  # Command to run
                 ]
                 
                 # Print the command to the terminal for debugging purposes

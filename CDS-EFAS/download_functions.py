@@ -28,7 +28,7 @@ def get_regions(name):
 
     raise ValueError(f"Region {name} not found")
 
-def fixed_region(name, delta):
+def fixed_region(name, delta=0):
     """Get lat-lon bounds of a region with delta around the mean lat-lon"""
     lat, lon = get_regions(name)
     if name != 'global':
