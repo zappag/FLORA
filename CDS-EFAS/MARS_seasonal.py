@@ -35,8 +35,8 @@ def parse_args():
                         help='The region for which to download the reforecast (e.g. Euro)')
     parser.add_argument('-c', '--clean', action="store_true",
                         help='clean worthless files')
-    parser.add_argument('-e', '--ensemble', type=str, required=True,
-                        help='Ensemble to be downloaded')
+    parser.add_argument('-e', '--ensemble', type=str,
+                        help='Ensemble to be downloaded (Default all 25 ensemble)')
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     clean = args.clean #remove the temporary files
 
     TGTDIR = "/work_big/users/davini/SEAS5/mars-v1/"
-    TMPDIR = "/work_big/users/davini/SEAS5/tmp"
+    TMPDIR = "/work_big/users/davini/SEAS5/tmp_mars"
     # create the target directory if it does not exist
     os.makedirs(TGTDIR, exist_ok=True)
     os.makedirs(TMPDIR, exist_ok=True)
@@ -62,7 +62,10 @@ if __name__ == "__main__":
     date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='MS', inclusive='left')
     MAXLEADTIME = 5160
     #MAXLEADTIME = 24
-    numbers = range(NENS)
+    if args.ensemble:
+        numbers = [args.ensemble]
+    else:
+        numbers = range(NENS)
     parameters = ['228.128']
     lat, lon = fixed_region(name=region)
 
