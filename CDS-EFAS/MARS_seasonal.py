@@ -89,6 +89,7 @@ if __name__ == "__main__":
                 file_target=os.path.join(FINALDIR, f"SEAS5_reforecast_{region}_{MAPPING[varname]}_{startdate}_seasonal_{str_number}.nc")
                 if os.path.exists(file_target):
                     logging.warning('%s already exist, skipping!', file_target)
+                    continue
 
                 # real download 
                 logging.warning('Downloading date %s for ensemble %s and parameter %s', date, number, parameter)
