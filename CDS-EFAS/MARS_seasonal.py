@@ -7,6 +7,7 @@ import subprocess
 import logging
 import argparse
 import os
+import time
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 import xarray as xr
@@ -20,6 +21,8 @@ logging.warning("Launching the MARS seasonal downloader...")
 
 # where MARS client is
 MARSPATH = '/home/davini/opt/bin/mars'
+MAX_RETRIES = 60 # wait 6 hours
+SLEEP_TIME = 300
 
 MAPPING = {
     'var228': 'total_precipitation'
@@ -124,17 +127,26 @@ if __name__ == "__main__":
 
                     logging.warning("Template processed and saved as %s", request)
 
-                    # Run the command 'mars request.req' using subprocess
-                    try:
-                        logging.warning('Running request...')
-                        result = subprocess.run([MARSPATH, request], check=True,
-                                                text=True, capture_output=True)
-                        print(result.stdout)
-                        if clean:
-                            os.remove(request)
-                    except subprocess.CalledProcessError as e:
-                        logging.error("An error occurred while executing the command:")
-                        logging.error(e.stderr)
+                    # Run the command 'mars request.req' using subproces
+                    retries = 0
+                    while retries < MAX_RETRIES:
+                        try:
+                            logging.warning("Attempt %s  of %s", retries + 1, MAX_RETRIES)
+                            result = subprocess.run([MARSPATH, request], check=True,
+                                                    text=True, capture_output=True)
+                            print(result.stdout)
+                            if clean:
+                                os.remove(request)
+                            break
+                        except subprocess.CalledProcessError as e:
+                            logging.error("An error occurred while executing the command:")
+                            logging.error(e.stderr)
+                            logging.warning('Waiting for % seconds', SLEEP_TIME)
+                            time.sleep(SLEEP_TIME)
+                            retries += 1
+                        if retries >= MAX_RETRIES:
+                            raise KeyError('Cannot proceed, number of maximum tentative achieved!')
+
 
                 # call cdo to convert to regular grid netcdf
                 file_regular=os.path.join(TMPDIR, f"SEAS5_{startdate}_{parameter}_{str_number}_regular.nc")
