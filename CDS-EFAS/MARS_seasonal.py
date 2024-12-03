@@ -32,14 +32,16 @@ MAPPING = {
 def parse_args():
     """parsing the stuff for running"""
     parser = argparse.ArgumentParser(description='MARS reforecast downloader')
-    parser.add_argument('--year', type=int, required=True,
+    parser.add_argument('-y', '--year', type=int, required=True,
                         help='The year to start the forecast (e.g. 2016)')
-    parser.add_argument('--region', type=str, required=True,
+    parser.add_argument('-r', '--region', type=str, required=True,
                         help='The region for which to download the reforecast (e.g. Euro)')
     parser.add_argument('-c', '--clean', action="store_true",
                         help='clean worthless files')
     parser.add_argument('-e', '--ensemble', type=str,
                         help='Ensemble to be downloaded (Default all 25 ensemble)')
+    parser.add_argument('-m', '--month', type=int,
+                        help='which month download')
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -50,6 +52,8 @@ if __name__ == "__main__":
     region = args.region
     year1 = year + 1
     clean = args.clean #remove the temporary files
+    month = args.month
+    month = str(month).zfill(2)
 
     TGTDIR = "/work_big/users/davini/SEAS5/mars-v1/"
     TMPDIR = "/work_big/users/davini/SEAS5/tmp_mars"
@@ -57,8 +61,12 @@ if __name__ == "__main__":
     os.makedirs(TGTDIR, exist_ok=True)
     os.makedirs(TMPDIR, exist_ok=True)
 
-    START_DATE = f"{year}-01-01"
-    END_DATE = f"{year1}-01-01"
+    START_DATE = f"{year}-{month}-01"
+    if month:
+        END_DATE = f"{year}-{month}-01"
+    else:
+        END_DATE = f"{year1}-01-01"
+
 
     NENS = 25 # number of ensemble members
     DELTA = 6 # delta between the leadtimes in hours
@@ -80,6 +88,7 @@ if __name__ == "__main__":
     for date in date_range:
         for number in numbers:
             for parameter in parameters:
+                logging.warning('Processing date %s for ensemble %s and parameter %s', date, number, parameter)
 
                 # useful variables
                 varname = 'var' + parameter.split('.', maxsplit=1)[0]
@@ -94,7 +103,7 @@ if __name__ == "__main__":
                     logging.warning('%s already exist, skipping!', file_target)
                     continue
 
-                # real download 
+                # real download
                 logging.warning('Downloading date %s for ensemble %s and parameter %s', date, number, parameter)
         
                 # Define the dictionary for jinja
