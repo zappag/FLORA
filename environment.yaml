@@ -1,9 +1,9 @@
-# Create the ECmean4 environment:
+# Create the Flora environment:
 # mamba env create -f environment.yml 
 # or 
 # conda env create -f environment.yml
 
-name : efas
+name : flora
 channels:
   - conda-forge
 dependencies:

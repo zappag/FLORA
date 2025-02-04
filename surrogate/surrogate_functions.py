@@ -21,7 +21,8 @@ def load_and_filter_file(filepath, discard_months, lead_months):
     date_offset = pd.tseries.frequencies.to_offset(time_delta)
 
     # drop reference time
-    ds = ds.drop_vars('forecast_reference_time')
+    if 'forecast_reference_time' in ds:
+        ds = ds.drop_vars('forecast_reference_time')
 
     # removing one timestamp because of the missing initial timestamp
     start_date = ds['forecast_period'].min().values + pd.DateOffset(months=discard_months) - date_offset
@@ -43,12 +44,14 @@ def find_matching_files(date, mode, region, variable, ensemble_name, path):
     year = date.strftime('%Y')
     yearmonth = date.strftime('%Y%m')
     modenodigit = ''.join([i for i in mode if not i.isdigit()])
-    if variable == 'dis24': #HACK for dis24
-        variable = ''
+    #if variable == 'dis24': #HACK for dis24
+    #    variable = ''
     file_pattern = os.path.join(path, region, year,
-                                f"{modenodigit}5_reforecast_{region}*{variable}*{yearmonth}01_seasonal_{ensemble_name}.nc")
+                                f"{modenodigit}5_reforecast_{region}_{variable}_{yearmonth}01_{ensemble_name}.nc")
     print(file_pattern)
     matched_files = glob.glob(file_pattern)
+    if not matched_files:
+        raise FileNotFoundError(f"No files found for {file_pattern}")
     return matched_files
 
 def target_filename(path, region, mode, variable, surrogate_kind, ensemble, offset_string):

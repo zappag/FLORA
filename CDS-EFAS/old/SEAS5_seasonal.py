@@ -10,7 +10,7 @@ import cdsapi
 import pandas as pd
 import xarray as xr
 from cdo import *
-from functions import chunks
+from download_functions import chunks
 cdo = Cdo()
 
 logging.warning("Launching the SEAS5 seasonal downloader...")
@@ -26,12 +26,13 @@ os.makedirs(TMPDIR, exist_ok=True)
 # create biweekly loop with pandas
 START_DATE = "1999-01-01"
 END_DATE = "1999-02-01"
-NENS = 25 # number of ensemble members
+NENS = 1 # number of ensemble members
 DELTA = 6 # delta between the leadtimes in hours
 CHUNKS_DOWNLOAD = 5160 # number of leadtimes to download at once
 MAXLEADTIME = 5160 # maximum leadtime in hours of 215 days
 date_range = pd.date_range(start=START_DATE, end=END_DATE, freq='MS')
-variables = ['mean_sea_level_pressure', 'total_precipitation']
+variables = ['geopotential', 'mean_sea_level_pressure', 'total_precipitation']
+PRESSURE_LEVELS = ['925', '850', '700', '500', '300']
 
 
 # loop over the dates
@@ -71,6 +72,7 @@ for date in date_range:
             if os.path.exists(single_file):
                 logging.warning(f"File {single_file} already exists, skipping download")
             else:
+
                 request =  {
                 'format': 'netcdf',
                 'originating_centre': 'ecmwf',
@@ -83,11 +85,20 @@ for date in date_range:
                 #'area': [lat[1], lon[0], lat[0], lon[1]]
                 #'leadtime_hour': [str(i) for i in range(0, 5161, 24)]
                     }
+                
+                # 3d vs 2d variables
+                if variable in ['geopotential', 'temperature', 'u_component_of_wind', 'v_component_of_wind']:
+                    datakind = "seasonal-original-pressure-levels"
+                    request['pressure_level'] = PRESSURE_LEVELS
+                    logging.warning("Downloading 3D variables on pressure levels %s", PRESSURE_LEVELS)
+                else:
+                    logging.warning("Downloading 2D variables")
+                    datakind = "seasonal-original-single-levels"
                 logging.warning("Launching the CDSAPI request...")
                 logging.warning(request)
                 c = cdsapi.Client()
                 c.retrieve(
-                    'seasonal-original-single-levels',
+                    datakind,
                     request,
                     single_file)
                 

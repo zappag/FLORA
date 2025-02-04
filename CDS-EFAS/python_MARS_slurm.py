@@ -5,7 +5,7 @@ import re
 
 USERNAME='davini'
 # Define the list of years and regions to loop through
-years = range(1999, 2000)
+years = range(2004,2005)
 months = range(1,13)
 regions = ['Euro']
 ensembles = range(25)
@@ -37,7 +37,6 @@ for year in years:
                 command = [
                     'sbatch',
                     f'--job-name={jobname}',            # Job name
-                    
                     f'--output=/home/davini/log/MARS-{year}{month}--{region}-{ensemble}-%j.out', # Output file
                     f'--error=/home/davini/log/MARS-{year}{month}-{region}-{ensemble}-%j.err',  # Error file
                     '--mem=4000M',                      # Memory
