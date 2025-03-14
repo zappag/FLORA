@@ -5,7 +5,7 @@ import re
 
 USERNAME='davini'
 # Define the list of years and regions to loop through
-years = range(2004,2005)
+years = range(2003, 2004)
 months = range(1,13)
 regions = ['Euro']
 ensembles = range(25)
@@ -33,7 +33,7 @@ for year in years:
         for region in regions:
             for ensemble in ensembles:
                 # Create the sbatch command with the year and region as arguments
-                jobname = f'MARS_{year}_{region}{month}_{ensemble}'
+                jobname = f'MARS_{year}{month}_{region}_{ensemble}'
                 command = [
                     'sbatch',
                     f'--job-name={jobname}',            # Job name

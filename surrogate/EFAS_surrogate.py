@@ -57,16 +57,40 @@ if __name__ == "__main__":
     variable = args.variable
     ensemble_name = str(args.ensemble).zfill(2)
 
+    # table for conversion of variables
+    # identify also the folder where they have been stored
     ecmwf_conversion = {
-        'dis24': 'river_discharge_in_the_last_24_hours',
-        'msl': 'mean_sea_level_pressure',
-        'z': 'geopotential'
+        'dis24': { 
+            'name': 'river_discharge_in_the_last_24_hours',
+            'source': 'seasonal-v5',
+        },
+        'msl': { 
+            'name': 'mean_sea_level_pressure',
+            'source': 'seasonal-v5',
+        },
+        'z': {
+            'name': 'geopotential',
+            'source': 'seasonal-v5',
+        },
+        'total_precipitation': {
+            'name': 'total_precipitation',
+            'source': 'mars-v1',
+        }
     }
-    matchvariable = ecmwf_conversion.get(variable)
+    isavailable = ecmwf_conversion.get(variable)
+    if isavailable is None:
+        raise KeyError(f'Cannot find {variable}, please edit the table')
+    
+    matchvariable = ecmwf_conversion.get(variable).get('name')
     if matchvariable is None:
         raise KeyError(f'Cannot find ECMWF matching for {variable}, please edit the table')
+    
+    sourcevariable = ecmwf_conversion.get(variable).get('source')
+    if sourcevariable is None:
+        raise KeyError(f'Cannot find ECMWF matching for {variable}, please edit the table')
 
-    source = f'/work_big/users/clima/davini/{mode}/seasonal-v5'
+    
+    source = f'/work_big/users/clima/davini/{mode}/{sourcevariable}'
     target = f'/work_big/users/clima/davini/{mode}/surrogate-v3'
     os.makedirs(target, exist_ok=True)
 
