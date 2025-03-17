@@ -17,4 +17,5 @@ dependencies:
   - pip
   - pip:
     - cdsapi
+    - ecmwf-api-client
     - cdo

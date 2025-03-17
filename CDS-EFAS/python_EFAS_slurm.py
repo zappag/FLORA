@@ -6,9 +6,9 @@ from download_functions import is_job_running, submit_job, manage_parent_job
 USERNAME='davini'
 # Define the list of years and regions to loop through
 #years = range(2004, 2005)
-years = range(1999, 2024)
-MODE = "EFAS5"
-months = range(1, 13)
+years = range(2003, 2004)
+MODE = "SEAS5"
+months = range(1, 3)
 PARALLEL = 8 # amount of parallel job allowed
 
 if MODE == "EFAS5":

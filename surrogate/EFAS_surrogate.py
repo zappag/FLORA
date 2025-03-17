@@ -1,6 +1,26 @@
 #!/usr/bin/env python3
 
-"""Create surrogate timeseries """
+"""
+EFAS Surrogate Timeseries Generator
+
+This script generates surrogate timeseries for EFAS/SEAS using specific input data.
+The surrogate timeseries can be generated in monthly, trimestral, or quadrimestral modes.
+
+Main functionalities:
+- Command-line argument parsing to specify generation parameters.
+- Loading and filtering of input files.
+- Generation of surrogate timeseries based on specific time offsets.
+- Saving the surrogate timeseries to NetCDF files.
+
+Imported modules:
+- os: Provides a way of using operating system dependent functionality.
+- sys: Provides access to some variables used or maintained by the interpreter.
+- argparse: Makes it easy to write user-friendly command-line interfaces.
+- logging: Provides a flexible framework for emitting log messages from Python programs.
+- xarray: Provides N-D labeled arrays and datasets in Python.
+- pandas: Provides data structures and data analysis tools.
+- surrogate_functions: Custom module with functions for loading, filtering, and saving data.
+"""
 
 import os
 import sys
@@ -20,6 +40,14 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 logging.warning("Launching the EFAS/SEAS seasonal downloader...")
 
 def parse_args():
+    """
+    Parse command-line arguments for surrogate file generation.
+
+    Options:
+    - Required positional argument for mode (EFAS5/SEAS5).
+    - Optional arguments for ensemble, region, surrogate kind, and variable.
+    
+    """
     # Set up command-line argument parsing
     parser = argparse.ArgumentParser(description="Parse parameters for surrogate file generation")
 
@@ -57,16 +85,40 @@ if __name__ == "__main__":
     variable = args.variable
     ensemble_name = str(args.ensemble).zfill(2)
 
+    # table for conversion of variables
+    # identify also the folder where they have been stored
     ecmwf_conversion = {
-        'dis24': 'river_discharge_in_the_last_24_hours',
-        'msl': 'mean_sea_level_pressure',
-        'z': 'geopotential'
+        'dis24': { 
+            'name': 'river_discharge_in_the_last_24_hours',
+            'source': 'seasonal-v5',
+        },
+        'msl': { 
+            'name': 'mean_sea_level_pressure',
+            'source': 'seasonal-v5',
+        },
+        'z': {
+            'name': 'geopotential',
+            'source': 'seasonal-v5',
+        },
+        'total_precipitation': {
+            'name': 'total_precipitation',
+            'source': 'mars-v1',
+        }
     }
-    matchvariable = ecmwf_conversion.get(variable)
+    isavailable = ecmwf_conversion.get(variable)
+    if isavailable is None:
+        raise KeyError(f'Cannot find {variable}, please edit the table')
+    
+    matchvariable = ecmwf_conversion.get(variable).get('name')
     if matchvariable is None:
         raise KeyError(f'Cannot find ECMWF matching for {variable}, please edit the table')
+    
+    sourcevariable = ecmwf_conversion.get(variable).get('source')
+    if sourcevariable is None:
+        raise KeyError(f'Cannot find ECMWF matching for {variable}, please edit the table')
 
-    source = f'/work_big/users/clima/davini/{mode}/seasonal-v5'
+    
+    source = f'/work_big/users/clima/davini/{mode}/{sourcevariable}'
     target = f'/work_big/users/clima/davini/{mode}/surrogate-v3'
     os.makedirs(target, exist_ok=True)
 

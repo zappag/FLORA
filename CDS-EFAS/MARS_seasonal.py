@@ -19,6 +19,10 @@ cdo = Cdo()
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 logging.warning("Launching the MARS seasonal downloader...")
 
+# paths
+TGTDIR = "/work_big/users/clima/davini/SEAS5/mars-v1/"
+TMPDIR = "/work_big/users/clima/davini/SEAS5/tmp_mars"
+
 # where MARS client is
 MARSPATH = '/home/davini/opt/bin/mars'
 MAX_RETRIES = 60 # wait 6 hours
@@ -55,8 +59,7 @@ if __name__ == "__main__":
     month = args.month
     month = str(month).zfill(2)
 
-    TGTDIR = "/work_big/users/davini/SEAS5/mars-v1/"
-    TMPDIR = "/work_big/users/davini/SEAS5/tmp_mars"
+
     # create the target directory if it does not exist
     os.makedirs(TGTDIR, exist_ok=True)
     os.makedirs(TMPDIR, exist_ok=True)
