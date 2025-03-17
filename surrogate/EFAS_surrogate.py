@@ -1,6 +1,26 @@
 #!/usr/bin/env python3
 
-"""Create surrogate timeseries """
+"""
+EFAS Surrogate Timeseries Generator
+
+This script generates surrogate timeseries for EFAS/SEAS using specific input data.
+The surrogate timeseries can be generated in monthly, trimestral, or quadrimestral modes.
+
+Main functionalities:
+- Command-line argument parsing to specify generation parameters.
+- Loading and filtering of input files.
+- Generation of surrogate timeseries based on specific time offsets.
+- Saving the surrogate timeseries to NetCDF files.
+
+Imported modules:
+- os: Provides a way of using operating system dependent functionality.
+- sys: Provides access to some variables used or maintained by the interpreter.
+- argparse: Makes it easy to write user-friendly command-line interfaces.
+- logging: Provides a flexible framework for emitting log messages from Python programs.
+- xarray: Provides N-D labeled arrays and datasets in Python.
+- pandas: Provides data structures and data analysis tools.
+- surrogate_functions: Custom module with functions for loading, filtering, and saving data.
+"""
 
 import os
 import sys
@@ -20,6 +40,14 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 logging.warning("Launching the EFAS/SEAS seasonal downloader...")
 
 def parse_args():
+    """
+    Parse command-line arguments for surrogate file generation.
+
+    Options:
+    - Required positional argument for mode (EFAS5/SEAS5).
+    - Optional arguments for ensemble, region, surrogate kind, and variable.
+    
+    """
     # Set up command-line argument parsing
     parser = argparse.ArgumentParser(description="Parse parameters for surrogate file generation")
 
