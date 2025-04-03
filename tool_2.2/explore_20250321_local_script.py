@@ -7,7 +7,10 @@
 
 import sys
 # Add your local "bin" dir:
-BINDIR="/home/tino/documents/work/Translate/programs/tools_ufficiali/"
+# This is the new path for gihub local directory:
+# before it was in program/tools_official/
+BINDIR="/home/tino/documents/work/Translate/github/FLORA/tool_2.2/"
+
 sys.path.append(BINDIR)
 import region_details
 import importlib
