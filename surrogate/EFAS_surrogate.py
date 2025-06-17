@@ -103,6 +103,7 @@ if __name__ == "__main__":
         'total_precipitation': {
             'name': 'total_precipitation',
             'source': 'mars-v1',
+            'remove_first': False
         }
     }
     isavailable = ecmwf_conversion.get(variable)
@@ -121,8 +122,10 @@ if __name__ == "__main__":
     source = f'/work_big/users/clima/davini/{mode}/{sourcevariable}'
     target = f'/work_big/users/clima/davini/{mode}/surrogate-v3'
     os.makedirs(target, exist_ok=True)
+    remove_first = ecmwf_conversion.get(variable).get('remove_first', True)
 
     logging.warning(f'Running for {variable} on {region} for {ensemble_name} in {surrogate_kind} mode')
+    logging.warning(f'Remove_first: {remove_first}')
 
     # get info on the different surrogate options
     discard_month, variants, pd_delta = get_surrogate_details(surrogate_kind=surrogate_kind, lead_months=lead_months)
@@ -153,7 +156,10 @@ if __name__ == "__main__":
                                                 ensemble_name=ensemble_name, path=source)
             logging.warning(f"Matching files for {date}: {matched_files}")
             selected_data = load_and_filter_file(filepath=matched_files[0],
-                                            discard_months=discard_month, lead_months=lead_months)
+                                            discard_months=discard_month, lead_months=lead_months,
+                                            remove_first=remove_first)
+            logging.warning("Time range: %s to %s", selected_data.forecast_period.min().values, 
+                            selected_data.forecast_period.max().values)
             # store values for specific longitude and latitude
             if default_lon is None:
                 default_lon = selected_data.longitude.values

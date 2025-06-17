@@ -61,10 +61,10 @@ if __name__ == "__main__":
     if mode == "EFAS5":
         DELTA = 24 # delta between the leadtimes in hours
         VERSION = 5 # version of the EFAS reforecast
-        variables = [f'river_discharge_in_the_last_{DELTA}_hours']
+        variables = ['soil_wetness_index', f'river_discharge_in_the_last_{DELTA}_hours']
         URL = 'https://ewds.climate.copernicus.eu/api'
         DATASET_NAME = 'efas-seasonal-reforecast'
-        CHUNKS_DOWNLOAD = 22 # number of leadtimes to download at once
+        CHUNKS_DOWNLOAD = 108 # number of leadtimes to download at once
     elif mode == "SEAS5":
         DELTA = 6 # delta between the leadtimes in hours: for SEAS5 this is adjusted to 12 hours for 3d data
         variables = ['geopotential', 'mean_sea_level_pressure']
@@ -162,7 +162,7 @@ if __name__ == "__main__":
                         'data_format': 'netcdf',
                         'download_format': 'zip',
                         'system_version': [f'version_{VERSION}_0'],
-                        'variable': [f'river_discharge_in_the_last_{DELTA}_hours'],
+                        'variable': variable,
                         'model_levels': 'surface_level',
                         'hyear': year,
                         'hmonth': month,
