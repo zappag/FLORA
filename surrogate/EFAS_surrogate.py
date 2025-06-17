@@ -104,6 +104,10 @@ if __name__ == "__main__":
             'name': 'total_precipitation',
             'source': 'mars-v1',
             'remove_first': False
+        },
+        'swir': {
+            'name': 'soil_wetness_index',
+            'source': 'seasonal-v5',    
         }
     }
     isavailable = ecmwf_conversion.get(variable)
