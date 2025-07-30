@@ -2,14 +2,12 @@
 
 import subprocess
 
-#mode = 'EFAS'
 mode = 'EFAS5'
+#mode = 'SEAS5'
 
 # Define the list of ensembles and regions to loop through
 ensembles = range(0, 25)
-#ensembles = [0, 1]
-
-
+#ensembles = [1, 2, 3, 4]
 
 surrogates = ['monthly', 'trimestral', 'quadrimestral']
 surrogates = ['trimestral']
@@ -19,11 +17,11 @@ surrogates = ['trimestral']
 slurm_script = 'EFAS_surrogate.py'  # The SLURM script you created earlier
 
 if mode == 'EFAS5':
-    variables = ['dis24']
+    variables = ['swir', 'dis24']
     regions = ['Panaro', 'Timis', 'Lagen', 'Aragon', 'Reno', 'Turia']
-    regions = ['Lagen', 'Turia']
+    regions = ['Panaro']
 elif mode == 'SEAS5':
-    variables = ['z', 'msl']
+    variables = ['total_precipitation', 'z', 'msl']
     regions = ['Euro']
 else:
     raise KeyError(f'Cannot recognize {mode} mode')

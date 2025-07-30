@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 startdate = date.strftime('%Y%m%d')
 
                 # target filename
-                file_target=os.path.join(FINALDIR, f"SEAS5_reforecast_{region}_{MAPPING[varname]}_{startdate}_seasonal_{str_number}.nc")
+                file_target=os.path.join(FINALDIR, f"SEAS5_reforecast_{region}_{MAPPING[varname]}_{startdate}_{str_number}.nc")
                 if os.path.exists(file_target):
                     logging.warning('%s already exist, skipping!', file_target)
                     continue
@@ -193,7 +193,7 @@ if __name__ == "__main__":
                 }
                 
                 file_target=os.path.join(FINALDIR, 
-                                         f"SEAS5_reforecast_{region}_{MAPPING[varname]}_{startdate}_seasonal_{str_number}.nc")
+                                         f"SEAS5_reforecast_{region}_{MAPPING[varname]}_{startdate}_{str_number}.nc")
                 logging.warning("Saving the data to NeetCDF to %s", file_target)
                 selected.to_netcdf(file_target, encoding={selected.name: var_encoding})
                 if clean:

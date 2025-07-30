@@ -7,7 +7,7 @@ import xarray as xr
 import pandas as pd
 
 
-def load_and_filter_file(filepath, discard_months, lead_months):
+def load_and_filter_file(filepath, discard_months, lead_months, remove_first=True):
     """
     Load a single NetCDF file, discard initial months, and select lead months.
 
@@ -15,6 +15,7 @@ def load_and_filter_file(filepath, discard_months, lead_months):
         filepath (str): Path to the NetCDF file.
         discard_months (int): Number of initial months to discard from the dataset.
         lead_months (int): Number of lead months to select from the dataset after discarding initial months.
+        remove_first (bool): If True, remove the first timestamp from the dataset. Default is True.
     Returns:
         xarray.Dataset or None: The filtered dataset containing the selected lead months, or None if no data is selected.
     """
@@ -35,7 +36,9 @@ def load_and_filter_file(filepath, discard_months, lead_months):
         ds = ds.drop_vars('forecast_reference_time')
 
     # removing one timestamp because of the missing initial timestamp
-    start_date = ds['forecast_period'].min().values + pd.DateOffset(months=discard_months) - date_offset
+    start_date = ds['forecast_period'].min().values + pd.DateOffset(months=discard_months)
+    if remove_first:
+        start_date = start_date - date_offset
     # Define the ending point based on lead months
     end_date = start_date + pd.DateOffset(months=lead_months - discard_months) - date_offset
     selected_data = []
