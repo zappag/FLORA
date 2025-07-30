@@ -5,7 +5,7 @@ import re
 
 USERNAME='davini'
 # Define the list of years and regions to loop through
-years = range(2003, 2004)
+years = range(2013, 2014)
 months = range(1,13)
 regions = ['Euro']
 ensembles = range(25)
